@@ -12,17 +12,29 @@ jobs:
     # Steps are a list of commands to run inside the docker container above.
     steps:
       - run: echo "Hello" # This prints "Hello" to stdout.
+      
   print_world: # This is our second job.
     docker: # it uses the docker executor
       - image: circleci/node:13.8.0
     # Steps are a list of commands to run inside the docker container above.
     steps:
       - run: echo " World." # This prints "World" to stdout.
+      
+  build:
+    docker:
+      - image: cimg/base:2020.01
+    steps:
+      - checkout
+      - run:
+          name: "echo an env var that is part of our project"
+          command: |
+            echo $CIRCLE_BUILD_URL    
 workflows:
   # Name the workflow "one_and_two"
   one_and_two:
     # Run both jobs in its own container
     jobs:
+      - build
       - print_hello
       - print_world:
           requires:
