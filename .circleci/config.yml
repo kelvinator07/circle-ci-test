@@ -24,6 +24,6 @@ workflows:
     # Run both jobs in its own container
     jobs:
       - print_hello
-      - print_world
-            requires:
-              - print_hello
+      - print_world:
+          requires:
+            - print_hello
