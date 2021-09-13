@@ -29,12 +29,35 @@ jobs:
           name: "echo an env var that is part of our project"
           command: |
             echo $CIRCLE_BUILD_URL    
+
+  save_hello_world_output: 
+    docker: # it uses the docker executor
+      - image: circleci/node:13.8.0
+    # Steps are a list of commands to run inside the docker container above.
+    steps:
+      - run: echo "Hello world to file." > ~/output.txt
+      - persist_to_workspace: 
+          root: ~/
+          paths:
+            - output.txt
+      
+  print_output_file: 
+    docker: # it uses the docker executor
+      - image: circleci/node:13.8.0
+    # Steps are a list of commands to run inside the docker container above.
+    steps:
+      - attach_workspace:
+          at: ~/
+      - run: cat ~/output.txt
+
 workflows:
   # Name the workflow "one_and_two"
   one_and_two:
     # Run both jobs in its own container
     jobs:
       - build
+      - save_hello_world_output
+      - print_output_file
       - print_hello
       - print_world:
           requires:
