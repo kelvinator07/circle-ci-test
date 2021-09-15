@@ -1,26 +1,48 @@
 # Use the latest 2.1 version of CircleCI pipeline process engine. See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 # Use a package of configuration called an orb.
-orbs:
-  aws-cli: circleci/aws-cli@2.0.3
+# Exercise: Config and Deployment
 # Orchestrate or schedule a set of jobs
 jobs:
-  create_infrastructure: # This is our first job.
-    docker: # it uses the docker executor
-      - image: amazon/aws-cli
-    # Steps are a list of commands to run inside the docker container above.
+  configure_infrastructure: 
+    docker:
+      - image: python:3.7-alpine3.11
     steps:
-      - checkout 
+      - checkout
+      - add_ssh_keys:
+          fingerprints: ["60:63:e6:09:01:8e:ad:c8:cc:1c:e5:92:c4:85:e4:19"] # You can get this ID in the section where you registered the SSH Key
+      - attach_workspace:
+          at: ~/
+      - run: cat .circleci/ansible/inventory.txt
       - run:
-          name: Create Cloudformation Stack
+          name: Install dependencies
           command: |
-            aws cloudformation deploy \
-              --template-file template.yml \
-              --stack-name kelvinStack-${CIRCLE_WORKFLOW_ID:0:5} \
-              --region us-east-1
+            # install the dependencies needed for your playbook
+            apk add --update jq tar gzip ansible nodejs npm curl
+            pip install awscli
+      - run: cat .circleci/ansible/inventory.txt  
+      - run:
+          name: Configure server
+          command: |
+            echo NODE_ENV=production > "backend/.env"
+            echo ENVIRONMENT=production >> "backend/.env"
+            echo TYPEORM_CONNECTION=postgres >> "backend/.env"
+            echo TYPEORM_ENTITIES=./src/modules/domain/**/*.entity.ts >> "backend/.env"
+            echo TYPEORM_MIGRATIONS=./src/migrations/*.ts >> "backend/.env"
+            echo TYPEORM_MIGRATIONS_DIR=./src/migrations >> "backend/.env"
+            echo NODE_ENV=production >> "backend/.env"
+            echo TYPEORM_HOST=$TYPEORM_HOST >> "backend/.env"
+            echo TYPEORM_PORT=$TYPEORM_PORT >> "backend/.env"
+            echo TYPEORM_USERNAME=$TYPEORM_USERNAME >> "backend/.env"
+            echo TYPEORM_PASSWORD=$TYPEORM_PASSWORD >> "backend/.env"
+            echo TYPEORM_DATABASE=$TYPEORM_DATABASE >> "backend/.env"
+            echo "back-end env start"
+            cat backend/.env
+            echo "back-end env stop"
+            ansible-playbook -i .circleci/ansible/inventory.txt .circleci/ansible/configure-server.yml 
 
 workflows:
   # Name the workflow "my_workflow"
   my_workflow:
     jobs:
-      - create_infrastructure
+      - configure_infrastructure
