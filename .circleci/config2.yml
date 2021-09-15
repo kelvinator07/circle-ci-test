@@ -43,7 +43,8 @@ jobs:
       - run:
           name: "echo an env var that is part of our project"
           command: |
-            echo $CIRCLE_BUILD_URL    
+            echo $CIRCLE_BUILD_URL
+            
   save_hello_world_output: 
     <<: *defaults
     # Steps are a list of commands to run inside the docker container above.
